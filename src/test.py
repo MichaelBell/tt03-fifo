@@ -101,3 +101,43 @@ async def test_fifo(dut):
     assert dut.empty_n.value == 0
     assert dut.data_out.value == 0
 
+    # Pop when empty
+    dut.pop.value = 1
+    await ClockCycles(dut.clk, 1, False)
+    assert dut.empty_n.value == 0
+    assert dut.data_out.value == 0
+
+    dut.pop.value = 0
+    await ClockCycles(dut.clk, 1, False)
+    assert dut.empty_n.value == 0
+    assert dut.data_out.value == 0
+
+    # Check FIFO still works
+    dut.write_en.value = 1
+    for i in range(20):
+        dut.data_in.value = 1 + 2*i
+        await ClockCycles(dut.clk, 1, False)
+        assert dut.empty_n == 1
+
+    # Peek each entry
+    dut.write_en.value = 0
+    for i in range(16):
+        dut.peek.value = i
+        await ClockCycles(dut.clk, 1, False)
+        assert dut.data_out.value == 1 + 2*i
+        assert dut.empty_n == 1
+
+    # Pop each entry
+    dut.peek.value = 0
+    dut.pop.value = 1
+    for i in range(16):
+        await ClockCycles(dut.clk, 1, False)
+        assert dut.data_out.value == 1 + 2*i
+        assert dut.empty_n == 0 if i == 15 else 1
+
+    # Pop clears
+    dut.pop.value = 0
+    await ClockCycles(dut.clk, 1, False)
+    assert dut.empty_n.value == 0
+    assert dut.data_out.value == 0
+

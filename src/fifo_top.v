@@ -25,7 +25,7 @@ module MichaelBell_6bit_fifo (
     wire [5:0] data_in = io_in[7:2];
 
     // Fifo data
-    reg [5:0] data[0:15];
+    reg [5:0] fifo_data[0:15];
     reg [3:0] write_addr;
     reg [3:0] read_addr;
     wire [3:0] next_read_addr = read_addr + 1;
@@ -41,13 +41,37 @@ module MichaelBell_6bit_fifo (
     assign io_out[7:2] = data_out;
     wire [3:0] peek_addr = read_addr + peek;
 
-    // Implement the FIFO
+    // Generate all writes to the FIFO data.
+    genvar i;
+    generate
+        for (i = 0; i < 16; i = i+1) begin
+            always @(posedge clk)
+            begin
+                if (!reset_n) begin
+                    fifo_data[i] <= 0;
+                end else begin
+                    if (write_addr == i) begin
+                        if (write_en) begin
+                            // Only actually write if FIFO not full
+                            if (!empty_n || read_addr != write_addr) begin
+                                fifo_data[i] <= data_in;
+                            end
+                        end
+                        else if (pop && empty_n) begin
+                            if (next_read_addr == write_addr) begin
+                                fifo_data[i] <= 0;
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    endgenerate
+
+    // State tracking and output
     always @(posedge clk)
     begin
         if (!reset_n) begin
-            integer i;
-            for (i = 0; i < 16; i = i + 1)
-                data[i] <= 0;
             write_addr <= 0;
             read_addr <= 0;
             empty_n <= 0;
@@ -57,7 +81,6 @@ module MichaelBell_6bit_fifo (
             if (write_en) begin
                 // Only actually write if FIFO not full
                 if (!empty_n || read_addr != write_addr) begin
-                    data[write_addr] <= data_in;
                     empty_n <= 1;
                     write_addr <= write_addr + 1;
                 end
@@ -65,12 +88,11 @@ module MichaelBell_6bit_fifo (
             else if (pop && empty_n) begin
                 if (next_read_addr == write_addr) begin
                     empty_n <= 0;
-                    data[write_addr] <= 0;
                 end
                 read_addr <= next_read_addr;
             end
 
-            data_out <= data[peek_addr];
+            data_out <= fifo_data[peek_addr];
         end
     end
 
