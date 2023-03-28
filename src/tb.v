@@ -9,8 +9,14 @@ that can be driven / tested by the cocotb test.py
 module tb (
     // testbench is controlled by test.py
     input clk,
-    input rst,
-    output [6:0] segments
+    input write_en,
+    input [5:0] data_in,
+    input reset_n,
+    input pop,
+    input [3:0] peek,
+    output inv_clk,
+    output empty_n,
+    output [5:0] data_out
    );
 
     // this part dumps the trace to a vcd file that can be viewed with GTKWave
@@ -21,12 +27,15 @@ module tb (
     end
 
     // wire up the inputs and outputs
-    wire [7:0] inputs = {6'b0, rst, clk};
+    wire [5:0] muxed_in = write_en ? data_in : {peek, pop, reset_n};
+    wire [7:0] inputs = {muxed_in, write_en, clk};
     wire [7:0] outputs;
-    assign segments = outputs[6:0];
+    assign data_out = outputs[7:2];
+    assign empty_n = outputs[1];
+    assign inv_clk = outputs[0];
 
     // instantiate the DUT
-    seven_segment_seconds seven_segment_seconds(
+    MichaelBell_6bit_fifo fifo(
         `ifdef GL_TEST
             .vccd1( 1'b1),
             .vssd1( 1'b0),
