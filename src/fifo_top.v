@@ -10,7 +10,7 @@
    limitations under the License.
 */
 
-module MichaelBell_6bit_fifo #( parameter DEPTH_BITS = 5 ) (
+module MichaelBell_6bit_fifo #( parameter DEPTH_BITS = 4 ) (
   input [7:0] io_in,
   output [7:0] io_out
 );

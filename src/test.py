@@ -74,8 +74,8 @@ async def test_fifo(dut):
 
     # Overfill the FIFO
     dut.write_en.value = 1
-    for i in range(35):
-        dut.data_in.value = 1 + i
+    for i in range(20):
+        dut.data_in.value = 1 + 2*i
         await ClockCycles(dut.clk, 1, False)
         assert dut.empty_n == 1
 
@@ -84,16 +84,16 @@ async def test_fifo(dut):
     for i in range(16):
         dut.peek.value = i
         await ClockCycles(dut.clk, 1, False)
-        assert dut.data_out.value == 1 + i
+        assert dut.data_out.value == 1 + 2*i
         assert dut.empty_n == 1
 
     # Pop each entry
     dut.peek.value = 0
     dut.pop.value = 1
-    for i in range(32):
+    for i in range(16):
         await ClockCycles(dut.clk, 1, False)
-        assert dut.data_out.value == 1 + i
-        assert dut.empty_n == 0 if i == 31 else 1
+        assert dut.data_out.value == 1 + 2*i
+        assert dut.empty_n == 0 if i == 15 else 1
 
     # Pop clears
     dut.pop.value = 0
@@ -130,10 +130,10 @@ async def test_fifo(dut):
     # Pop each entry
     dut.peek.value = 0
     dut.pop.value = 1
-    for i in range(20):
+    for i in range(16):
         await ClockCycles(dut.clk, 1, False)
         assert dut.data_out.value == 1 + 2*i
-        assert dut.empty_n == 0 if i == 19 else 1
+        assert dut.empty_n == 0 if i == 15 else 1
 
     # Pop clears
     dut.pop.value = 0
