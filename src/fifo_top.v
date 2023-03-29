@@ -10,7 +10,7 @@
    limitations under the License.
 */
 
-module MichaelBell_6bit_fifo #( parameter DEPTH_BITS = 4 ) (
+module MichaelBell_6bit_fifo (
   input [7:0] io_in,
   output [7:0] io_out
 );
@@ -22,78 +22,52 @@ module MichaelBell_6bit_fifo #( parameter DEPTH_BITS = 4 ) (
     wire pop = (mode == 0) && io_in[3];
     wire [3:0] peek = mode ? 0 : io_in[7:4];
     wire write_en = mode;
-    wire [5:0] data_in = io_in[7:2];
-
-    // Fifo data
-    reg [5:0] fifo_data[0:(1 << DEPTH_BITS) - 1];
-    reg [DEPTH_BITS-1:0] write_addr;
-    reg [DEPTH_BITS-1:0] read_addr;
-    wire [DEPTH_BITS-1:0] next_read_addr = read_addr + 1;
-    reg empty_n;
+    wire [5:0] data_in = write_en ? io_in[7:2] : 0;
 
     // Simple outputs
-    assign io_out[0] = clk;
+    wire ready, empty_n;
+    assign io_out[0] = ready;
     assign io_out[1] = empty_n;
 
-    // Data out, registered so that popped value
-    // is presented on outputs when pop occurs.
+    wire [5:0] fifo_data_out;
     reg [5:0] data_out;
     assign io_out[7:2] = data_out;
-    wire [DEPTH_BITS-1:0] peek_addr = read_addr + peek;
 
-    // Generate all writes to the FIFO data.
-    genvar i;
-    generate
-        for (i = 0; i < (1 << DEPTH_BITS); i = i+1) begin
-            always @(posedge clk)
-            begin
-                if (!reset_n) begin
-                    fifo_data[i] <= 0;
-                end else begin
-                    if (write_addr == i) begin
-                        if (write_en) begin
-                            // Only actually write if FIFO not full
-                            if (!empty_n || read_addr != write_addr) begin
-                                fifo_data[i] <= data_in;
-                            end
-                        end
-                        else if (pop && empty_n) begin
-                            if (next_read_addr == write_addr) begin
-                                fifo_data[i] <= 0;
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    endgenerate
-
-    // State tracking and output
     always @(posedge clk)
     begin
         if (!reset_n) begin
-            write_addr <= 0;
-            read_addr <= 0;
-            empty_n <= 0;
             data_out <= 0;
         end
         else begin
-            if (write_en) begin
-                // Only actually write if FIFO not full
-                if (!empty_n || read_addr != write_addr) begin
-                    empty_n <= 1;
-                    write_addr <= write_addr + 1;
-                end
-            end
-            else if (pop && empty_n) begin
-                if (next_read_addr == write_addr) begin
-                    empty_n <= 0;
-                end
-                read_addr <= next_read_addr;
-            end
-
-            data_out <= fifo_data[peek_addr];
+            data_out <= fifo_data_out;
         end
     end
+
+    wire ff_fifo_full_n;
+    wire [5:0] l_to_ff_data;
+    wire l_to_ff_write;
+
+    latch_fifo #(.DEPTH(48), .WIDTH(6)) l_fifo(
+        .clk(clk),
+        .reset_n(reset_n),
+        .write_en(write_en),
+        .data_in(data_in),
+        .pop(ff_fifo_full_n),
+        .data_out(l_to_ff_data),
+        .write_out(l_to_ff_write),
+        .ready(ready)
+    );
+
+    ff_fifo #(.DEPTH_BITS(2), .WIDTH(6)) f_fifo(
+        .clk(clk),
+        .reset_n(reset_n),
+        .write_en(l_to_ff_write),
+        .data_in(l_to_ff_data),
+        .peek(peek[1:0]),
+        .pop(pop),
+        .data_out(fifo_data_out),
+        .empty_n(empty_n),
+        .full_n(ff_fifo_full_n)
+    );
 
 endmodule

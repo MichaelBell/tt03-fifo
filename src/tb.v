@@ -14,7 +14,7 @@ module tb (
     input reset_n,
     input pop,
     input [3:0] peek,
-    output inv_clk,
+    output ready,
     output empty_n,
     output [5:0] data_out
    );
@@ -32,7 +32,7 @@ module tb (
     wire [7:0] outputs;
     assign data_out = outputs[7:2];
     assign empty_n = outputs[1];
-    assign inv_clk = outputs[0];
+    assign ready = outputs[0];
 
     // instantiate the DUT
     MichaelBell_6bit_fifo fifo(

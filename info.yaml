@@ -7,6 +7,8 @@ project:
 # Source files must be in ./src and you must list each source file separately
   source_files:        
     - fifo_top.v
+    - latch_fifo.v
+    - ff_fifo.v
   top_module:  "MichaelBell_6bit_fifo"      # put the name of your top module here, make it unique by prepending your github username
 
 # Keep a track of the submission yaml
@@ -38,11 +40,11 @@ documentation:
     - Pop / Data 1
     - Peek A0 / Data 2
     - Peek A1 / Data 3
-    - Peek A2 / Data 4
-    - Peek A3 / Data 5
+    - Unused / Data 4
+    - Unused / Data 5
 # A description of what the outputs do
   outputs:
-    - Inverted clock
+    - Ready
     - Empty_n
     - Data 0
     - Data 1

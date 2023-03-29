@@ -9,7 +9,7 @@ TOPLEVEL_LANG ?= verilog
 ifneq ($(GATES),yes)
 
 # this is the only part you should need to modify:
-VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/fifo_top.v
+VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/fifo_top.v $(PWD)/latch_fifo.v $(PWD)/ff_fifo.v
 
 else
 
@@ -23,7 +23,7 @@ VERILOG_SOURCES += $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/primitiv
 VERILOG_SOURCES += $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v
 
 # this gets copied in by the GDS action workflow
-VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/gate_level_netlist.v
+VERILOG_SOURCES += $(PWD)/tb.v gate_level_netlist.v
 endif
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
@@ -34,3 +34,11 @@ MODULE = test
 
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim
+
+gate_level_netlist.v: ../runs/wokwi/results/final/verilog/gl/*.v
+	rm -f ../runs/wokwi/results/final/verilog/gl/*.nl.v
+	cp ../runs/wokwi/results/final/verilog/gl/*.v gate_level_netlist.v
+	sed -i '/sky130_fd_sc_hd__inv_[12] \\wrapper\.rosc\..*\.inv/s/sky130_fd_sc_hd__inv_[12]/inv_with_delay/' gate_level_netlist.v
+
+clean::
+	rm -f gate_level_netlist.v
