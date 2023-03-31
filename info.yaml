@@ -40,8 +40,8 @@ documentation:
       is clocked 49 or more times without any data being popped then the FIFO is full.
 
       There are minimal delays on the read side - if any data is in the FIFO then it can always be read, this works because empty latch 
-      entries can pass the data through them without needing to be clocked.  The only exception to this is that if the FIFO is empty
-      the first entry that is written takes 2 cycles to appear on the output.
+      entries can pass the data through them without needing to be clocked.  The only exception to this is that due to input buffering
+      newly written entries take 2 cycles to appear on the output.
 
 # Instructions on how someone could test your project, include things like what buttons do what and how to set the clock if needed
   how_to_test:  |
