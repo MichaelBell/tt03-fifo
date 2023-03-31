@@ -22,6 +22,7 @@ module latch_fifo_entry #( parameter WIDTH = 6 ) (
 );
     reg empty;
     reg [WIDTH-1:0] data;
+    wire [WIDTH-1:0] data_in_buf;
 
     // Write out if next entry wants data and we have or are getting data
     assign write_out = next_is_empty && (!empty || write_in);
@@ -39,11 +40,24 @@ module latch_fifo_entry #( parameter WIDTH = 6 ) (
     genvar i;
     generate
         for (i = 0; i < WIDTH; i = i + 1) begin
-            always @(empty or reset_n or data_in[i])
+            // Buffer input data
+            delay input_buf(.X(data_in_buf[i]), .A(data_in[i]));
+
+            // Latch buffered data
+`ifdef SIM
+            always @(empty or reset_n or data_in_buf[i])
                 if (!reset_n)
                     data[i] <= 0;
                 else if (empty)
-                    data[i] <= data_in[i];
+                    data[i] <= data_in_buf[i];
+`else
+            sky130_fd_sc_hd__dlrtp_1 latch (
+                .Q(data[i]),
+                .D(data_in_buf[i]),
+                .RESET_B(reset_n),
+                .GATE(empty)
+            );
+`endif
         end
     endgenerate
 
@@ -60,7 +74,8 @@ module latch_fifo #( parameter DEPTH = 4, parameter WIDTH = 6 ) (
     input pop,
     output [WIDTH-1:0] data_out,
     output write_out,
-    output ready
+    output ready,
+    output ready_back
 );
 
     wire pop_data [DEPTH:0];
@@ -72,7 +87,8 @@ module latch_fifo #( parameter DEPTH = 4, parameter WIDTH = 6 ) (
     assign data[DEPTH] = data_in;
     assign data_out = data[0];
     assign write_out = write_data[0];
-    assign ready = pop_data[DEPTH] && reset_n;
+    assign ready = pop_data[DEPTH-1] && reset_n;
+    assign ready_back = pop_data[DEPTH];
 
     genvar i;
     generate

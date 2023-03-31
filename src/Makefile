@@ -9,7 +9,8 @@ TOPLEVEL_LANG ?= verilog
 ifneq ($(GATES),yes)
 
 # this is the only part you should need to modify:
-VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/fifo_top.v $(PWD)/latch_fifo.v $(PWD)/ff_fifo.v
+VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/fifo_top.v $(PWD)/latch_fifo.v $(PWD)/ff_fifo.v $(PWD)/delay_cells.v
+COMPILE_ARGS    += -DSIM
 
 else
 
