@@ -1,3 +1,5 @@
+import random
+
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, ClockCycles
@@ -232,7 +234,7 @@ async def test_single_write_read(dut):
     dut.reset_n.value = 1
     await ClockCycles(dut.clk, 1, False)
 
-    for i in range(5,52):
+    for i in range(52):
         #print("Testing at fullness {}".format(i))
         data = []
 
@@ -252,10 +254,11 @@ async def test_single_write_read(dut):
             dut.data_in.value = j % 64
             data.append(j % 64)
             await ClockCycles(dut.clk, 1, False)
+            dut.write_en.value = 0
+            if i == 0: await ClockCycles(dut.clk, 1, False)
             assert dut.empty_n.value == 1
             
             # Pop
-            dut.write_en.value = 0
             dut.pop.value = 1
             await ClockCycles(dut.clk, 1, False)
             dut.pop.value = 0
@@ -275,3 +278,52 @@ async def test_single_write_read(dut):
         await ClockCycles(dut.clk, j, False)
         assert dut.empty_n == 0
         assert dut.ready.value == 1
+
+@cocotb.test()
+async def test_random_push_pop(dut):
+    dut._log.info("start")
+    clock = Clock(dut.clk, 10, units="us")
+    cocotb.start_soon(clock.start())
+
+    dut._log.info("reset")
+    dut.write_en.value = 0
+    dut.reset_n.value = 0
+    dut.pop.value = 0
+    dut.peek.value = 0
+    await ClockCycles(dut.clk, 10, False)
+    dut.reset_n.value = 1
+    await ClockCycles(dut.clk, 1, False)
+
+    data = []
+    for i in range(100000):
+        pop = random.choice([True, False])
+        push = not pop
+        if push and len(data) < 52:
+            for j in range(49):
+                if dut.ready.value == 1: break
+                if j == 48:
+                    assert dut.ready.value == 1
+                await ClockCycles(dut.clk, 1, False)
+
+            # Push
+            dut.write_en.value = 1
+            new_val = random.randint(0, 63)
+            dut.data_in.value = new_val
+            data.append(new_val)
+            await ClockCycles(dut.clk, 1, False)
+            dut.write_en.value = 0
+
+            # Extra cycle if len == 1
+            if len(data) == 1:
+                await ClockCycles(dut.clk, 1, False)
+            assert dut.empty_n.value == 1
+
+        if pop and len(data) > 0:
+            # Pop
+            dut.pop.value = 1
+            await ClockCycles(dut.clk, 1, False)
+            dut.pop.value = 0
+            assert dut.data_out.value == data[0]
+            data.pop(0)
+            assert dut.empty_n.value == (0 if len(data) == 0 else 1)
+

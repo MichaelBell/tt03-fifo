@@ -36,30 +36,24 @@ module latch_fifo_entry #( parameter WIDTH = 6 ) (
         end
     end
 
-    // Latch data_in into data.
-    genvar i;
-    generate
-        for (i = 0; i < WIDTH; i = i + 1) begin
-            // Buffer input data
-            delay input_buf(.X(data_in_buf[i]), .A(data_in[i]));
+    // Delay input data to ensure we don't read the next data on the falling edge of empty
+    delay input_buf[WIDTH-1:0] (.X(data_in_buf), .A(data_in));
 
-            // Latch buffered data
+    // Latch buffered data
 `ifdef SIM
-            always @(empty or reset_n or data_in_buf[i])
-                if (!reset_n)
-                    data[i] <= 0;
-                else if (empty)
-                    data[i] <= data_in_buf[i];
+    always @(empty or reset_n or data_in_buf)
+        if (!reset_n)
+            data <= 0;
+        else if (empty)
+            data <= data_in_buf;
 `else
-            sky130_fd_sc_hd__dlrtp_1 latch (
-                .Q(data[i]),
-                .D(data_in_buf[i]),
-                .RESET_B(reset_n),
-                .GATE(empty)
-            );
+    sky130_fd_sc_hd__dlrtp_1 latch[WIDTH-1:0] (
+        .Q(data),
+        .D(data_in_buf),
+        .RESET_B(reset_n),
+        .GATE(empty)
+    );
 `endif
-        end
-    endgenerate
 
     assign data_out = data;
     assign empty_out = empty;
