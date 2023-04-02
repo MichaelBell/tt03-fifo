@@ -64,6 +64,19 @@ module MichaelBell_6bit_fifo (
         end
     end
 
+`ifdef ICE40
+    ff_fifo #(.DEPTH_BITS(5), .WIDTH(6)) f_fifo(
+        .clk(clk),
+        .reset_n(reset_n),
+        .write_en(write_en_buf),
+        .data_in(data_in_dbuf),
+        .peek(peek[1:0]),
+        .pop(pop),
+        .data_out(fifo_data_out),
+        .empty_n(empty_n),
+        .full_n(ready)
+    );
+`else
     wire ff_fifo_full_n;
     wire [5:0] l_to_ff_data;
     wire l_to_ff_write;
@@ -91,5 +104,6 @@ module MichaelBell_6bit_fifo (
         .empty_n(empty_n),
         .full_n(ff_fifo_full_n)
     );
+`endif
 
 endmodule
