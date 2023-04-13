@@ -11,8 +11,8 @@
 */
 
 // Due to Tiny Tapeout and OpenROAD limitations, using the delay gate primitves
-// from the sky130 library doesn't work.  This module allows a configurable number
-// of inverters to be used to introduce a delay that the synthesis tools don't remove
+// from the sky130 library doesn't work.  This module allows uses a configurable number
+// of buffers to introduce a delay that the synthesis tools don't remove
 
 module delay #( parameter DELAY = 1 ) (
     input A,
@@ -29,26 +29,26 @@ module delay #( parameter DELAY = 1 ) (
     for (i = 0; i < DELAY; i = i + 1) begin
         wire mid;
 
-        // Do two inversions to create a delay
+        // Instantiate buffers to create the delay
         if (i == 0)
-            sky130_fd_sc_hd__inv_1 inv_first (
-                .Y(mid),
+            sky130_fd_sc_hd__buf_1 buf_first (
+                .X(mid),
                 .A(A)
             );
         else
-            sky130_fd_sc_hd__inv_1 inv1 (
-                .Y(mid),
+            sky130_fd_sc_hd__buf_1 buf1 (
+                .X(mid),
                 .A(b[i-1])
             );
 
         if (i == DELAY-1)
-            sky130_fd_sc_hd__inv_2 inv_last (
-                .Y(X),
+            sky130_fd_sc_hd__buf_2 buf_last (
+                .X(X),
                 .A(mid)
             );
         else
-            sky130_fd_sc_hd__inv_1 inv2 (
-                .Y(b[i]),
+            sky130_fd_sc_hd__buf_1 buf2 (
+                .X(b[i]),
                 .A(mid)
             );
     end
